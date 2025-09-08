@@ -23,7 +23,7 @@ class Genome:
         self.c3 = c3
 
         # Random fitness for now
-        self.fitness = random.uniform(0, 200)
+        self.fitness = 0  # Initialize to 0
         self.adjusted_fitness = 0
 
         # Input nodes
@@ -35,7 +35,17 @@ class Genome:
         for _ in range(self.n_outputs):
             self.nodes.append(Node(self.total_nodes, 1))
             self.total_nodes += 1
-        pass
+        
+        # CRITICAL FIX: Create initial connections from all inputs to all outputs
+        self.create_initial_connections()
+
+    def create_initial_connections(self):
+        """Create initial fully connected network from inputs to outputs"""
+        for i in range(self.n_inputs):
+            for o in range(self.n_outputs):
+                input_node = self.nodes[i]
+                output_node = self.nodes[self.n_inputs + o]
+                self.connect_nodes(input_node, output_node)
 
     def clone(self):
         clone = Genome(self.gh)
@@ -93,19 +103,44 @@ class Genome:
         self.connect_nodes(n1, n2)
         pass
 
-    # Random Mutations
-    def mutate(self):
+    def mutate(self, mutation_intensity=1.0):
+        """
+        Mutate with adaptive intensity based on population stagnation
+        mutation_intensity: 1.0 = normal, >1.0 = more aggressive
+        """
         if len(self.genes) == 0:
             self.add_gene()
 
-        if random.random() < 0.8:
+        # Scale mutation rates based on intensity
+        weight_mutation_rate = min(0.9, 0.8 * mutation_intensity)
+        add_gene_rate = min(0.3, 0.08 * mutation_intensity)
+        add_node_rate = min(0.1, 0.02 * mutation_intensity)
+        
+        # Weight mutations with increased strength
+        if random.random() < weight_mutation_rate:
             for i in range(len(self.genes)):
-                self.genes[i].mutate()
-        if random.random() < 0.08:
+                self.genes[i].mutate(mutation_intensity)
+        
+        # Structural mutations
+        if random.random() < add_gene_rate:
             self.add_gene()
-        if random.random() < 0.02:
+        
+        if random.random() < add_node_rate:
             self.add_node()
-        pass
+        
+        # Extra aggressive mutations when intensity is high
+        if mutation_intensity > 2.0:
+            # More structural changes
+            if random.random() < 0.15:
+                self.add_gene()
+            if random.random() < 0.05:
+                self.add_node()
+            
+            # Randomly disable/enable some genes
+            if random.random() < 0.1:
+                for gene in self.genes:
+                    if random.random() < 0.1:
+                        gene.enabled = not gene.enabled
 
     def get_node(self, n):
         for i in range(len(self.nodes)):
@@ -114,7 +149,6 @@ class Genome:
         print("Node not found : Something's Wrong ", n)
         return None
 
-    # Connect genes to get ready for output calculation
     def connect_genes(self):
         for i in range(len(self.genes)):
             self.genes[i].in_node = self.get_node(self.genes[i].in_node.number)
@@ -128,20 +162,17 @@ class Genome:
             self.genes[i].out_node.in_genes.append(self.genes[i])
         pass
 
-    # Get Outputs
     def get_outputs(self, inputs):
         if len(inputs) != self.n_inputs:
             print("Wrong number of inputs")
             return [-1]
 
-        # Input layers outputs are the specified inputs
         for i in range(self.n_inputs):
             self.nodes[i].output = inputs[i]
 
-        # Connect genes (Clean references)
         self.connect_genes()
 
-        # calculate layer wise
+        # Calculate hidden layers (layer 2 and above)
         for layer in range(2, self.gh.highest_hidden + 1):
             nodes_in_layer = []
             for n in range(len(self.nodes)):
@@ -151,16 +182,13 @@ class Genome:
             for n in range(len(nodes_in_layer)):
                 nodes_in_layer[n].calculate()
 
-        # calculate final outputs at last
         final_outputs = []
         for n in range(self.n_inputs, self.n_inputs + self.n_outputs):
-            self.nodes[n].calculate()
+            self.nodes[n].calculate()  # This will now actually work
             final_outputs.append(self.nodes[n].output)
 
-        # return outputs
         return final_outputs
 
-    # get weight of gene of inno
     def get_weight(self, inno):
         for g in self.genes:
             if g.inno == inno:
@@ -172,17 +200,17 @@ class Genome:
         child.nodes.clear()
 
         try:
-            p1_highest_inno = max([(a.inno) for a in self.genes])
+            p1_highest_inno = max([(a.inno) for a in self.genes]) if self.genes else -1
         except Exception:
-            p1_highest_inno = 0
+            p1_highest_inno = -1
 
         try:
-            p2_highest_inno = max([(a.inno) for a in partner.genes])
+            p2_highest_inno = max([(a.inno) for a in partner.genes]) if partner.genes else -1
         except Exception:
-            p2_highest_inno = 0
+            p2_highest_inno = -1
 
-        # Give the child the maximum nodes of the two
-        if self.total_nodes > partner.total_nodes:
+        # Give the child the nodes from the more fit parent
+        if self.fitness >= partner.fitness:
             child.total_nodes = self.total_nodes
             for i in range(self.total_nodes):
                 child.nodes.append(self.nodes[i].clone())
@@ -191,31 +219,24 @@ class Genome:
             for i in range(partner.total_nodes):
                 child.nodes.append(partner.nodes[i].clone())
 
-        highest_inno = (
-            p1_highest_inno if self.fitness > partner.fitness else p2_highest_inno
-        )
+        highest_inno = max(p1_highest_inno, p2_highest_inno)
 
+        # Fixed crossover logic
         for i in range(highest_inno + 1):
             e1 = self.exists(i)
             e2 = partner.exists(i)
-            if e1 or e2:
-                if e1 and e2:
-                    gene = (
-                        self.get_gene(i)
-                        if random.random() < 0.5
-                        else partner.get_gene(i)
-                    )
-                    child.genes.append(gene)
-                    continue
-                if e1:
+            
+            if e1 and e2:
+                if random.random() < 0.5:
                     child.genes.append(self.get_gene(i))
-                if e2:
+                else:
                     child.genes.append(partner.get_gene(i))
-
-            pass
+            elif e1 and self.fitness >= partner.fitness:
+                child.genes.append(self.get_gene(i))
+            elif e2 and partner.fitness > self.fitness:
+                child.genes.append(partner.get_gene(i))
 
         child.connect_genes()
-
         return child
 
     def get_gene(self, inno):
@@ -225,7 +246,6 @@ class Genome:
         print("Gene not found")
         return None
 
-    # Compatibility calculation
     def calculate_compatibility(self, partner, summary=False):
         try:
             p1_highest_inno = max([(a.inno) for a in self.genes])

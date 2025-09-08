@@ -20,14 +20,19 @@ class Gene:
         g.inno = self.inno
         return g
 
-    def mutate(self):
-        if random.random() < 0.1:
+    def mutate(self, intensity=1.0):
+        """
+        Mutate gene weight with adaptive intensity
+        intensity: 1.0 = normal, >1.0 = more aggressive
+        """
+        large_mutation_rate = 0.1 * intensity
+        mutation_range = 0.02 * intensity
+        
+        if random.random() < large_mutation_rate:
             self.weight = random.random() * 4 - 2
         else:
-            self.weight += random.uniform(-0.02, 0.02)
-            # Clamping
-            self.weight = self.weight if self.weight < 2 else 2
-            self.weight = self.weight if self.weight > -2 else -2
+            self.weight += random.uniform(-mutation_range, mutation_range)
+            self.weight = max(-2, min(2, self.weight))
 
     def get_info(self):
         s = str(self.inno) + "] "
