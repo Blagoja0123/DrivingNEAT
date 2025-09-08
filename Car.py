@@ -11,6 +11,20 @@ screen_width = 1500
 screen_height = 800
 
 
+CHECKPOINTS = [
+    [700, 650],  # Start position
+    [1185, 673],
+    [1270, 550],
+    [1130, 85],
+    [185, 190],
+    [1058, 350],
+    [854, 522],
+    [540, 207],
+    [207, 540],
+    [536, 695],
+    # [700, 650]  # Back to start for lap completion
+]
+
 class Car:
     def __init__(self, gh, clone=False):
         self.surface = pygame.image.load("mcl.png")
@@ -29,7 +43,9 @@ class Car:
         self.fitness = 0
         self.gh = gh
 
-        # Create genome brain like Bird
+        self.last_checkpoint = -1
+        self.laps_completed = 0
+
         if not clone:
             self.brain = Genome(gh)
             for _ in range(10):
@@ -105,7 +121,6 @@ class Car:
         for d in range(-90, 120, 45):
             self.check_radar(d, map_img)
 
-        # Think + decide
         inputs = self.get_inputs()
         outs = self.brain.get_outputs(inputs)
         if outs[0] > outs[1]:
@@ -113,8 +128,26 @@ class Car:
         else:
             self.angle -= 10
 
+        self.update_checkpoint()
+
         # Update fitness
-        self.fitness = self.distance / 50.0
+        # Base fitness: distance traveled + bonus for checkpoints
+        checkpoint_bonus = (self.last_checkpoint + 1) * 1000
+        lap_bonus = self.laps_completed * len(CHECKPOINTS) * 1500
+        self.fitness = self.distance / 50.0 + checkpoint_bonus + lap_bonus
+
+    def update_checkpoint(self):
+        """Update last checkpoint hit if car is close enough to it, and track laps"""
+        for i, cp in enumerate(CHECKPOINTS):
+            cp_x, cp_y = cp
+            dist = math.hypot(self.center[0] - cp_x, self.center[1] - cp_y)
+            if dist < 50:
+                if i == 0 and self.last_checkpoint == len(CHECKPOINTS) - 1:
+                    self.laps_completed += 1
+                    self.last_checkpoint = -1
+                elif i > self.last_checkpoint:
+                    self.last_checkpoint = i
+                break
 
     def get_inputs(self):
         """Return normalized radar distances as inputs"""
