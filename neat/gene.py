@@ -25,8 +25,8 @@ class Gene:
         Mutate gene weight with adaptive intensity
         intensity: 1.0 = normal, >1.0 = more aggressive
         """
-        large_mutation_rate = 0.1 * intensity
-        mutation_range = 0.02 * intensity
+        large_mutation_rate = 0.15 * intensity
+        mutation_range = 0.025 * intensity
         
         if random.random() < large_mutation_rate:
             self.weight = random.random() * 4 - 2
