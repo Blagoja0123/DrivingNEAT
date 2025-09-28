@@ -4,17 +4,7 @@ import glob
 
 
 def create_gif_from_images(input_directory, output_filename="animation.gif", duration=500):
-    """
-    Create a GIF from all images in a directory
 
-    Args:
-        input_directory (str): Path to directory containing images
-        output_filename (str): Name of output GIF file
-        duration (int): Duration between frames in milliseconds (500ms = 0.5 seconds)
-    """
-
-    # Get all image files from the directory
-    # Support common image formats
     image_extensions = ['*.jpg', '*.jpeg', '*.png', '*.bmp', '*.gif', '*.tiff']
     image_files = []
 
@@ -22,7 +12,6 @@ def create_gif_from_images(input_directory, output_filename="animation.gif", dur
         image_files.extend(glob.glob(os.path.join(input_directory, extension)))
         image_files.extend(glob.glob(os.path.join(input_directory, extension.upper())))
 
-    # Sort files to ensure proper order (especially if they're numbered)
     image_files.sort()
 
     if not image_files:
@@ -36,7 +25,6 @@ def create_gif_from_images(input_directory, output_filename="animation.gif", dur
     for image_file in image_files:
         try:
             img = Image.open(image_file)
-            # Convert to RGB if necessary (some formats might be RGBA or grayscale)
             if img.mode != 'RGB':
                 img = img.convert('RGB')
             images.append(img)
@@ -48,7 +36,6 @@ def create_gif_from_images(input_directory, output_filename="animation.gif", dur
         print("No valid images could be loaded")
         return
 
-    # Save as GIF
     print(f"\nCreating GIF with {len(images)} frames...")
     print(f"Duration per frame: {duration}ms")
 
@@ -69,15 +56,9 @@ def create_gif_from_images(input_directory, output_filename="animation.gif", dur
 
 # Example usage
 if __name__ == "__main__":
-    # Modify these variables for your setup
-    input_dir = "visualization-snapshots"  # Change this to your image directory
+    input_dir = "visualization-snapshots"
     output_gif = "slow_animation.gif"
-    frame_duration = 250  # milliseconds per frame (500ms = 0.5 seconds)
+    frame_duration = 250
 
-    # For 100 images at 500ms each = 50 seconds total animation
-    # Adjust duration as needed:
-    # - 200ms = faster animation (20 seconds total)
-    # - 800ms = slower animation (80 seconds total)
-    # - 1000ms = very slow (100 seconds total)
 
     create_gif_from_images(input_dir, output_gif, frame_duration)

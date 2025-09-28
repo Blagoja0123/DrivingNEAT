@@ -10,7 +10,6 @@ class NetworkVisualizer:
         self.height = height
         self.screen = None
         self.num_file = 1
-        # Colors
         self.bg_color = (20, 20, 30)
         self.node_color = (100, 150, 255)
         self.input_color = (100, 255, 100)
@@ -20,7 +19,6 @@ class NetworkVisualizer:
         self.disabled_color = (100, 100, 100)
 
     def visualize_network(self, genome, title="Evolved Neural Network", filename="network"):
-        """Render a genome's neural network once and save as image"""
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(title)
@@ -29,16 +27,13 @@ class NetworkVisualizer:
 
         self.screen.fill(self.bg_color)
 
-        # Build network structure
         network_info = self.analyze_network(genome)
         node_positions = self.calculate_node_positions(network_info)
 
-        # Draw title
         title_text = title_font.render(title, True, (255, 255, 255))
         title_rect = title_text.get_rect(center=(self.width // 2, 30))
         self.screen.blit(title_text, title_rect)
 
-        # Draw network info
         info_y = 60
         info_texts = [
             f"Nodes: {len(network_info['nodes'])} | Connections: {len(genome.genes)}",
@@ -62,13 +57,11 @@ class NetworkVisualizer:
         pygame.quit()
 
     def analyze_network(self, genome):
-        """Analyze network structure"""
         nodes = {}
         input_count = 0
         output_count = 0
         hidden_count = 0
 
-        # Collect all node numbers from genes
         all_node_nums = set()
         for gene in genome.genes:
             in_id = gene.in_node.number
@@ -76,7 +69,6 @@ class NetworkVisualizer:
             all_node_nums.add(in_id)
             all_node_nums.add(out_id)
 
-        # Categorize nodes
         for node_num in all_node_nums:
             if node_num < genome.gh.n_inputs:
                 node_type = "input"
@@ -95,7 +87,6 @@ class NetworkVisualizer:
                 'connections_out': []
             }
 
-        # Add connection information
         for gene in genome.genes:
             if gene.enabled:
                 in_id = gene.in_node.number
@@ -115,12 +106,10 @@ class NetworkVisualizer:
         positions = {}
         margin = 100
 
-        # Separate nodes by type
         input_nodes = [n for n in network_info['nodes'].values() if n['type'] == 'input']
         output_nodes = [n for n in network_info['nodes'].values() if n['type'] == 'output']
         hidden_nodes = [n for n in network_info['nodes'].values() if n['type'] == 'hidden']
 
-        # Position input nodes (left side)
         if input_nodes:
             input_x = margin
             input_spacing = (self.height - 2 * margin) / max(1, len(input_nodes) - 1) if len(input_nodes) > 1 else 0
@@ -128,7 +117,6 @@ class NetworkVisualizer:
                 y = margin + i * input_spacing if len(input_nodes) > 1 else self.height // 2
                 positions[node['number']] = (input_x, int(y))
 
-        # Position output nodes (right side)
         if output_nodes:
             output_x = self.width - margin
             output_spacing = (self.height - 2 * margin) / max(1, len(output_nodes) - 1) if len(output_nodes) > 1 else 0
@@ -136,10 +124,8 @@ class NetworkVisualizer:
                 y = margin + i * output_spacing if len(output_nodes) > 1 else self.height // 2
                 positions[node['number']] = (output_x, int(y))
 
-        # Position hidden nodes (middle, arranged in layers)
         if hidden_nodes:
-            # Simple layout: arrange hidden nodes in the middle
-            hidden_layers = 3  # Assume max 3 hidden layers for layout
+            hidden_layers = 3
             layer_width = (self.width - 2 * margin - 200) / (hidden_layers + 1)
 
             nodes_per_layer = len(hidden_nodes) // hidden_layers + 1
@@ -170,16 +156,14 @@ class NetworkVisualizer:
                 start_pos = positions[in_id]
                 end_pos = positions[out_id]
 
-                # Color based on weight and enabled status
+
                 if gene.enabled:
-                    # Color intensity based on weight strength
                     weight_strength = min(abs(gene.weight), 3.0) / 3.0
                     if gene.weight > 0:
-                        color = (int(100 + 155 * weight_strength), int(50 + 50 * weight_strength), 50)  # Red
+                        color = (int(100 + 155 * weight_strength), int(50 + 50 * weight_strength), 50)
                     else:
-                        color = (50, int(50 + 50 * weight_strength), int(100 + 155 * weight_strength))  # Blue
+                        color = (50, int(50 + 50 * weight_strength), int(100 + 155 * weight_strength))
 
-                    # Line thickness based on weight
                     thickness = max(1, int(weight_strength * 5))
                 else:
                     color = self.disabled_color
@@ -187,15 +171,13 @@ class NetworkVisualizer:
 
                 pygame.draw.line(self.screen, color, start_pos, end_pos, thickness)
 
-                # Draw weight value near the middle of the connection
-                if gene.enabled and abs(gene.weight) > 0.1:  # Only show significant weights
+                if gene.enabled and abs(gene.weight) > 0.1:
                     mid_x = (start_pos[0] + end_pos[0]) // 2
                     mid_y = (start_pos[1] + end_pos[1]) // 2
 
                     weight_text = font.render(f"{gene.weight:.1f}", True, (255, 255, 255))
                     text_rect = weight_text.get_rect(center=(mid_x, mid_y))
 
-                    # Draw background for text
                     pygame.draw.rect(self.screen, (0, 0, 0, 128), text_rect.inflate(4, 2))
                     self.screen.blit(weight_text, text_rect)
 
@@ -204,7 +186,6 @@ class NetworkVisualizer:
         for node_num, pos in positions.items():
             node_info = network_info['nodes'][node_num]
 
-            # Choose color based on node type
             if node_info['type'] == 'input':
                 color = self.input_color
                 radius = 15
@@ -215,16 +196,13 @@ class NetworkVisualizer:
                 color = self.hidden_color
                 radius = 12
 
-            # Draw node circle
             pygame.draw.circle(self.screen, (0, 0, 0), pos, radius + 2)  # Border
             pygame.draw.circle(self.screen, color, pos, radius)
 
-            # Draw node number
             text = font.render(str(node_num), True, (0, 0, 0))
             text_rect = text.get_rect(center=pos)
             self.screen.blit(text, text_rect)
 
-            # Draw node label below
             if node_info['type'] == 'input':
                 if node_num == 0:
                     label = "Radar 0°"
@@ -261,20 +239,17 @@ class NetworkVisualizer:
         legend_x = self.width - 250
         legend_y = self.height - 150
 
-        # Create a transparent surface for the legend background
         legend_surface = pygame.Surface((240, 140), pygame.SRCALPHA)
 
-        # Draw semi-transparent background (RGBA: Red, Green, Blue, Alpha)
-        # Alpha values: 0 = fully transparent, 255 = fully opaque
-        pygame.draw.rect(legend_surface, (40, 40, 60, 180), (0, 0, 240, 140))  # Semi-transparent dark background
-        pygame.draw.rect(legend_surface, (100, 100, 120, 200), (0, 0, 240, 140), 2)  # Semi-transparent border
 
-        # Blit the transparent background to the main screen
+        pygame.draw.rect(legend_surface, (40, 40, 60, 180), (0, 0, 240, 140))
+        pygame.draw.rect(legend_surface, (100, 100, 120, 200), (0, 0, 240, 140), 2)
+
         self.screen.blit(legend_surface, (legend_x - 10, legend_y - 10))
 
         legend_items = [
-            ("Legend:", (255, 255, 255, 220)),  # Slightly transparent white
-            ("🟢 Input Nodes", (*self.input_color, 220)),  # Add transparency to existing colors
+            ("Legend:", (255, 255, 255, 220)),
+            ("🟢 Input Nodes", (*self.input_color, 220)),
             ("🔴 Output Nodes", (*self.output_color, 220)),
             ("🟡 Hidden Nodes", (*self.hidden_color, 220)),
             ("Red Lines: Positive weights", (255, 100, 100, 220)),
@@ -282,15 +257,12 @@ class NetworkVisualizer:
             ("Thickness = Weight strength", (200, 200, 200, 220))
         ]
 
-        # Create individual text surfaces with per-pixel alpha for text transparency
         for i, (text, color) in enumerate(legend_items):
-            # Create a surface for the text with per-pixel alpha
-            text_surface = font.render(text, True, color[:3])  # Use RGB only for font rendering
+            text_surface = font.render(text, True, color[:3])
 
-            # If we want text transparency, create a new surface with alpha
-            if len(color) == 4:  # If alpha value is provided
+            if len(color) == 4:
                 alpha_surface = pygame.Surface(text_surface.get_size(), pygame.SRCALPHA)
-                alpha_surface.fill((255, 255, 255, color[3]))  # Fill with white and desired alpha
+                alpha_surface.fill((255, 255, 255, color[3]))
                 text_surface.blit(alpha_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
             self.screen.blit(text_surface, (legend_x, legend_y + i * 18))
@@ -303,7 +275,6 @@ class NetworkVisualizer:
             self.font = pygame.font.SysFont("Arial", 14)
             self.title_font = pygame.font.SysFont("Arial", 24, bold=True)
 
-        # Handle quit events so window is responsive
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -314,12 +285,10 @@ class NetworkVisualizer:
         network_info = self.analyze_network(genome)
         node_positions = self.calculate_node_positions(network_info)
 
-        # Draw title
         title_text = self.title_font.render(title, True, (255, 255, 255))
         title_rect = title_text.get_rect(center=(self.width // 2, 30))
         self.screen.blit(title_text, title_rect)
 
-        # Draw connections and nodes
         self.draw_connections(genome, node_positions, self.font)
         self.draw_nodes(network_info, node_positions, self.font)
         self.draw_legend(self.font)
@@ -328,15 +297,7 @@ class NetworkVisualizer:
 
 
 def visualize_best_network(population, generation=None):
-    """Visualize the best network from a population and save to file"""
     best_genome = max(population.population, key=lambda g: g.fitness)
     visualizer = NetworkVisualizer()
     filename = f"best_network_gen_{generation}.png" if generation is not None else "best_network.png"
     visualizer.visualize_network(best_genome, f"Best Network (Fitness: {best_genome.fitness:.2f})", filename)
-
-
-
-# Usage example - add this to your main code after training:
-if __name__ == "__main__":
-    # After your training loop, add:
-    visualize_best_network(pop)
