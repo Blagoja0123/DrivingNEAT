@@ -1,7 +1,4 @@
 import pygame
-import math
-import random
-from neat.genome import Genome
 
 
 class NetworkVisualizer:

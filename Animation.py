@@ -5,7 +5,7 @@ import glob
 
 def create_gif_from_images(input_directory, output_filename="animation.gif", duration=500):
 
-    image_extensions = ['*.jpg', '*.jpeg', '*.png', '*.bmp', '*.gif', '*.tiff']
+    image_extensions = ['*.png']
     image_files = []
 
     for extension in image_extensions:
@@ -20,7 +20,6 @@ def create_gif_from_images(input_directory, output_filename="animation.gif", dur
 
     print(f"Found {len(image_files)} images")
 
-    # Load all images
     images = []
     for image_file in image_files:
         try:
@@ -44,17 +43,15 @@ def create_gif_from_images(input_directory, output_filename="animation.gif", dur
         save_all=True,
         append_images=images[1:],
         duration=duration,
-        loop=0  # 0 means infinite loop
+        loop=0
     )
 
     print(f"GIF saved as: {output_filename}")
 
-    # Calculate total animation time
     total_time = len(images) * duration / 1000
     print(f"Total animation time: {total_time:.1f} seconds")
 
 
-# Example usage
 if __name__ == "__main__":
     input_dir = "visualization-snapshots"
     output_gif = "slow_animation.gif"
